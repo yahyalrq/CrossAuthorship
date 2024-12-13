@@ -1,0 +1,31 @@
+File Authorship Scores:
+App.js: {"rayanmazari90": 17.55377825289171, "yahyalrq": 24.95955286561692}
+i18n.js: {"rayanmazari90": 8.644642857142857, "yahyalrq": 4.247767857142857}
+store.js: {"rayanmazari90": 7.191681960038347, "yahyalrq": 11.686151310404746}
+components/Background.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+components/Constant_color.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+components/GradientText.js: {"rayanmazari90": 5.816326530612246, "yahyalrq": 4.073979591836736}
+components/adminkey.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+components/connection_url.js: {"rayanmazari90": 11.347695951535144, "yahyalrq": 16.01268502898663}
+features/LanguageSlice.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+features/TutoSlice.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+features/UserVoteSlice.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+features/friendsSlice.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+features/instagramSlice.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+features/socketSlice.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+features/themeSlice.js: {"rayanmazari90": 1.0, "yahyalrq": 1.0}
+features/userSlice.js: {"rayanmazari90": 6.930098753493428, "yahyalrq": 11.16402507195379}
+screens/EventsScreen.js: {"rayanmazari90": 20.590147667142805, "yahyalrq": 35.59325910010829}
+screens/LoginScreen.js: {"rayanmazari90": 17.9885603182526, "yahyalrq": 27.031336350234856}
+screens/QRScanner.js: {"rayanmazari90": 15.605172998336133, "yahyalrq": 23.553273416905814}
+services/appApi.js: {"rayanmazari90": 12.966170346806484, "yahyalrq": 22.269110886379874}
+components/EventTabNavigator.js: {"yahyalrq": 17.712202826193792, "rayanmazari90": 19.454877382312613}
+components/Participantitem/index.js: {"yahyalrq": 4.45}
+screens/EventDetailsScreen.js: {"yahyalrq": 11.407190898275271, "rayanmazari90": 6.263543132833234}
+screens/EventParticipantsScreen.js: {"yahyalrq": 30.562865446922014, "rayanmazari90": 16.260167048854022}
+components/ParticipantItem/index.js: {"rayanmazari90": 2.25}
+components/TableBookingItem/index.js: {"yahyalrq": 1.144736842105263}
+
+Project Authorship Scores:
+rayanmazari90: 178.86286320025164
+yahyalrq: 255.86813749306685
