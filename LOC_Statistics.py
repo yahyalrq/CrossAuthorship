@@ -31,26 +31,28 @@ def is_js_file(file_path: str) -> bool:
 
 def get_all_commits(repo_path: str, limit: Optional[int] = None) -> List[Any]:
     """
-    Retrieve all commits from the given repository and sort them by date.
+    Retrieve all unique commits from the given repository and sort them by date.
     """
     logger.info(f"Retrieving all commits from repository: {repo_path}")
-    commit_list = []
+    unique_commits = {}
     try:
         repo = Repo(repo_path)
         logger.info(f"Opened repository at {repo_path}")
     except Exception as e:
         logger.error(f"Failed to open repo at {repo_path}: {e}")
-        return commit_list
-
+        return []
+    
+    # Iterate over all branches
     for branch in repo.branches:
         logger.info(f"Processing branch: {branch.name}")
         for commit in repo.iter_commits(branch):
-            commit_list.append(commit)
-            if limit and len(commit_list) >= limit:
-                break
+            if commit.hexsha not in unique_commits:
+                unique_commits[commit.hexsha] = commit
+                if limit and len(unique_commits) >= limit:
+                    break
 
-    commits_sorted = sorted(commit_list, key=lambda c: c.committed_datetime)
-    logger.info(f"Total commits retrieved: {len(commits_sorted)}")
+    commits_sorted = sorted(unique_commits.values(), key=lambda c: c.committed_datetime)
+    logger.info(f"Total unique commits retrieved: {len(commits_sorted)}")
     return commits_sorted[:limit] if limit else commits_sorted
 
 def count_lines_in_diff(diff: bytes) -> Tuple[int, int]:
@@ -99,6 +101,21 @@ def main():
         commit_dates[author].append(commit_date)
         logger.info(f"Processing commit {i + 1}/{len(all_commits)}: {commit.hexsha} by {author} on {commit_date}")
 
+        # **Initialize author in authors_stats if not present**
+        if author not in authors_stats:
+            authors_stats[author] = {
+                'total_commits': 0,
+                'js_commits': 0,
+                'lines_added': 0,
+                'lines_removed': 0,
+                'avg_lines_added_per_commit': 0.0,
+                'avg_lines_removed_per_commit': 0.0,
+                'commit_frequency_per_month': {}
+            }
+
+        # **Increment total commits for the author**
+        authors_stats[author]['total_commits'] += 1
+
         # Determine diffs for the commit
         if not commit.parents:
             # Initial commit, compare against empty tree
@@ -131,36 +148,17 @@ def main():
             total_removed += removed
 
             # **Update per-author statistics**
-            if author not in authors_stats:
-                authors_stats[author] = {
-                    'commits': 0,
-                    'lines_added': 0,
-                    'lines_removed': 0,
-                    'avg_lines_added_per_commit': 0.0,
-                    'avg_lines_removed_per_commit': 0.0,
-                    'commit_frequency_per_month': {}
-                }
-
             authors_stats[author]['lines_added'] += added
             authors_stats[author]['lines_removed'] += removed
 
-        # **Update commit counters**
+        # **Update commit counters for .js modifications**
         if modifies_js:
             js_commits += 1
-            if author not in authors_stats:
-                authors_stats[author] = {
-                    'commits': 0,
-                    'lines_added': 0,
-                    'lines_removed': 0,
-                    'avg_lines_added_per_commit': 0.0,
-                    'avg_lines_removed_per_commit': 0.0,
-                    'commit_frequency_per_month': {}
-                }
-            authors_stats[author]['commits'] += 1
+            authors_stats[author]['js_commits'] += 1
 
-    # **Calculate average lines per commit for each author**
+    # **Calculate average lines per .js commit for each author**
     for author, stats in authors_stats.items():
-        commits = stats['commits']
+        commits = stats['js_commits']
         if commits > 0:
             stats['avg_lines_added_per_commit'] = round(stats['lines_added'] / commits, 2)
             stats['avg_lines_removed_per_commit'] = round(stats['lines_removed'] / commits, 2)
@@ -176,11 +174,11 @@ def main():
         if author in authors_stats:
             authors_stats[author]['commit_frequency_per_month'] = dict(frequency)
 
-    # **Sort authors by number of commits (descending)**
-    sorted_authors = sorted(authors_stats.items(), key=lambda x: x[1]['commits'], reverse=True)
+    # **Sort authors by number of total commits (descending)**
+    sorted_authors = sorted(authors_stats.items(), key=lambda x: x[1]['total_commits'], reverse=True)
 
     # **Output the total counts**
-    logger.info(f"Total Commits in Repository: {total_commits}")
+    logger.info(f"Total Unique Commits in Repository: {total_commits}")
     logger.info(f"Total Commits that modified .js files: {js_commits}")
     logger.info(f"Total Lines Added across all .js files: {total_added}")
     logger.info(f"Total Lines Removed across all .js files: {total_removed}")
@@ -192,23 +190,25 @@ def main():
         output_data = {
             "per_author_stats": {
                 author: {
-                    "commits": stats['commits'],
+                    "total_commits": stats['total_commits'],
+                    "js_commits": stats['js_commits'],
                     "lines_added": stats['lines_added'],
                     "lines_removed": stats['lines_removed'],
-                    "avg_lines_added_per_commit": stats['avg_lines_added_per_commit'],
-                    "avg_lines_removed_per_commit": stats['avg_lines_removed_per_commit'],
+                    "avg_lines_added_per_js_commit": stats['avg_lines_added_per_commit'],
+                    "avg_lines_removed_per_js_commit": stats['avg_lines_removed_per_commit'],
                     "commit_frequency_per_month": stats['commit_frequency_per_month']
                 }
                 for author, stats in authors_stats.items()
             },
-            "sorted_authors_by_commits": [
+            "sorted_authors_by_total_commits": [
                 {
                     "author": author,
-                    "commits": stats['commits'],
+                    "total_commits": stats['total_commits'],
+                    "js_commits": stats['js_commits'],
                     "lines_added": stats['lines_added'],
                     "lines_removed": stats['lines_removed'],
-                    "avg_lines_added_per_commit": stats['avg_lines_added_per_commit'],
-                    "avg_lines_removed_per_commit": stats['avg_lines_removed_per_commit'],
+                    "avg_lines_added_per_js_commit": stats['avg_lines_added_per_commit'],
+                    "avg_lines_removed_per_js_commit": stats['avg_lines_removed_per_commit'],
                     "commit_frequency_per_month": stats['commit_frequency_per_month']
                 }
                 for author, stats in sorted_authors
@@ -228,20 +228,22 @@ def main():
 
     # **Print per-author statistics**
     print("\nPer-Author Contribution Statistics:")
+
     for author, stats in sorted_authors:
         print(f"\nAuthor: {author}")
-        print(f"  Commits: {stats['commits']}")
-        print(f"  Lines Added: {stats['lines_added']}")
-        print(f"  Lines Removed: {stats['lines_removed']}")
-        print(f"  Average Lines Added per Commit: {stats['avg_lines_added_per_commit']}")
-        print(f"  Average Lines Removed per Commit: {stats['avg_lines_removed_per_commit']}")
+        print(f"  Total Commits: {stats['total_commits']}")
+        print(f"  Commits that modified .js files: {stats['js_commits']}")
+        print(f"  Lines Added (in .js commits): {stats['lines_added']}")
+        print(f"  Lines Removed (in .js commits): {stats['lines_removed']}")
+        print(f"  Average Lines Added per .js Commit: {stats['avg_lines_added_per_commit']}")
+        print(f"  Average Lines Removed per .js Commit: {stats['avg_lines_removed_per_commit']}")
         print(f"  Commit Frequency per Month:")
         for month, count in sorted(stats['commit_frequency_per_month'].items()):
             print(f"    {month}: {count} commits")
 
     # **Print total counts**
     print("\nOverall Repository Statistics:")
-    print(f"  Total Commits: {total_commits}")
+    print(f"  Total Unique Commits: {total_commits}")
     print(f"  Total Commits that modified .js files: {js_commits}")
     print(f"  Total Lines Added across all .js files: {total_added}")
     print(f"  Total Lines Removed across all .js files: {total_removed}")
