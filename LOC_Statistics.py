@@ -15,6 +15,7 @@ logger.info("Starting the Contribution Statistics Script.")
 # Define the repository path (modify this path to your target repository)
 REPO_PATH = 'REPO1'
 
+
 # Define excluded files
 EXCLUDED_FILES = {
     ".prettierrc.js",
@@ -31,7 +32,7 @@ def is_js_file(file_path: str) -> bool:
 
 def get_all_commits(repo_path: str, limit: Optional[int] = None) -> List[Any]:
     """
-    Retrieve all unique commits from the given repository and sort them by date.
+    Retrieve all unique commits from the given repository, excluding merge commits.
     """
     logger.info(f"Retrieving all commits from repository: {repo_path}")
     unique_commits = {}
@@ -46,14 +47,20 @@ def get_all_commits(repo_path: str, limit: Optional[int] = None) -> List[Any]:
     for branch in repo.branches:
         logger.info(f"Processing branch: {branch.name}")
         for commit in repo.iter_commits(branch):
+            # Skip merge commits (more than one parent)
+            if len(commit.parents) > 1:
+                logger.info(f"Skipping merge commit: {commit.hexsha}")
+                continue
+            
             if commit.hexsha not in unique_commits:
                 unique_commits[commit.hexsha] = commit
                 if limit and len(unique_commits) >= limit:
                     break
 
     commits_sorted = sorted(unique_commits.values(), key=lambda c: c.committed_datetime)
-    logger.info(f"Total unique commits retrieved: {len(commits_sorted)}")
+    logger.info(f"Total unique commits retrieved (excluding merges): {len(commits_sorted)}")
     return commits_sorted[:limit] if limit else commits_sorted
+
 
 def count_lines_in_diff(diff: bytes) -> Tuple[int, int]:
     """
@@ -96,6 +103,11 @@ def main():
 
     logger.info("Starting processing of commits for contribution statistics.")
     for i, commit in enumerate(all_commits):
+    # Skip merge commits (handled already, but for safety)
+        if len(commit.parents) > 1:
+            logger.info(f"Skipping merge commit during processing: {commit.hexsha}")
+            continue
+
         author = commit.author.name if commit.author else "Unknown"
         commit_date = commit.committed_datetime.strftime('%Y-%m')  # Year-Month format
         commit_dates[author].append(commit_date)
