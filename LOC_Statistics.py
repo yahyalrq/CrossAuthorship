@@ -30,6 +30,12 @@ def is_js_file(file_path: str) -> bool:
     """Check if the file is a JavaScript file and not excluded."""
     return file_path.endswith('.js') and file_path not in EXCLUDED_FILES
 
+#For particula project where htmlshould be handled
+"""def is_js_file(file_path: str) -> bool:
+   
+    return file_path.endswith('.js') and file_path.endswith('.html') and file_path.endswith('.css') and file_path not in EXCLUDED_FILES
+"""
+
 def get_all_commits(repo_path: str, limit: Optional[int] = None) -> List[Any]:
     """
     Retrieve all unique commits from the given repository, excluding merge commits.
